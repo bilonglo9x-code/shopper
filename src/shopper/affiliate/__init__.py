@@ -1,0 +1,1 @@
+"""Shopee Affiliate API client."""

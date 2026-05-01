@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopper - Shopee Data Scraper</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      <span>Shopper</span>
+    </div>
+    <a href="#" class="nav-item active" data-page="dashboard">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="#" class="nav-item" data-page="scrape">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Thu thập
+    </a>
+    <a href="#" class="nav-item" data-page="tasks">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Tasks
+    </a>
+    <a href="#" class="nav-item" data-page="affiliate">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Affiliate
+    </a>
+    <a href="#" class="nav-item" data-page="detect">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      Nhận diện
+    </a>
+    <div class="sidebar-footer">
+      <div class="server-status" id="serverStatus">
+        <span class="status-dot"></span>
+        <span>Đang kết nối...</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="content">
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Tổng quan hệ thống thu thập dữ liệu Shopee</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="statTotalTasks">0</span>
+            <span class="stat-label">Tổng Tasks</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="statRunning">0</span>
+            <span class="stat-label">Đang chạy</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="statCompleted">0</span>
+            <span class="stat-label">Hoàn thành</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="statAffiliate">--</span>
+            <span class="stat-label">Affiliate</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Tasks gần đây</h2>
+          <button class="btn btn-sm" onclick="navigateTo('tasks')">Xem tất cả</button>
+        </div>
+        <div id="recentTasks" class="task-list">
+          <div class="empty-state">Chưa có task nào</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrape Page -->
+    <div class="page" id="page-scrape">
+      <div class="page-header">
+        <h1>Thu thập dữ liệu</h1>
+        <p>Nhập URL Shopee hoặc keyword để bắt đầu thu thập</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Yêu cầu mới</h2></div>
+        <form id="scrapeForm" onsubmit="submitScrape(event)">
+          <div class="form-group">
+            <label>URL hoặc Keyword</label>
+            <input type="text" id="scrapeUrl" placeholder="https://shopee.vn/Product-i.123.456 hoặc 'áo thun nam'" required>
+            <small>Hỗ trợ: link sản phẩm, shop, danh mục, keyword tìm kiếm</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Domain</label>
+              <select id="scrapeDomain">
+                <option value="shopee.vn">shopee.vn (Việt Nam)</option>
+                <option value="shopee.sg">shopee.sg (Singapore)</option>
+                <option value="shopee.com.my">shopee.com.my (Malaysia)</option>
+                <option value="shopee.co.th">shopee.co.th (Thailand)</option>
+                <option value="shopee.tw">shopee.tw (Taiwan)</option>
+                <option value="shopee.co.id">shopee.co.id (Indonesia)</option>
+                <option value="shopee.ph">shopee.ph (Philippines)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số lượng tối đa</label>
+              <input type="number" id="scrapeMaxItems" value="50" min="0" placeholder="0 = tất cả">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Sắp xếp theo</label>
+              <select id="scrapeSortBy">
+                <option value="relevancy">Liên quan</option>
+                <option value="sales">Bán chạy</option>
+                <option value="ctime">Mới nhất</option>
+                <option value="price">Giá</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Max Reviews/SP</label>
+              <input type="number" id="scrapeMaxReviews" value="50" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="scrapeReviews"> Thu thập reviews
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="scrapeAffiliate"> Tạo affiliate links
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSubmitScrape">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Bắt đầu thu thập
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="submitScrapeSync()">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Thu thập ngay (chờ kết quả)
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="card" id="scrapeResultCard" style="display:none">
+        <div class="card-header">
+          <h2>Kết quả</h2>
+          <div>
+            <button class="btn btn-sm" onclick="exportResult('json')">Export JSON</button>
+            <button class="btn btn-sm" onclick="exportResult('csv')">Export CSV</button>
+          </div>
+        </div>
+        <div id="scrapeResult"></div>
+      </div>
+    </div>
+
+    <!-- Tasks Page -->
+    <div class="page" id="page-tasks">
+      <div class="page-header">
+        <h1>Quản lý Tasks</h1>
+        <p>Xem trạng thái và kết quả các yêu cầu thu thập</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Danh sách Tasks</h2>
+          <div class="filter-bar">
+            <select id="taskFilter" onchange="loadTasks()">
+              <option value="">Tất cả</option>
+              <option value="pending">Chờ xử lý</option>
+              <option value="running">Đang chạy</option>
+              <option value="completed">Hoàn thành</option>
+              <option value="failed">Lỗi</option>
+            </select>
+            <button class="btn btn-sm" onclick="loadTasks()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Làm mới
+            </button>
+          </div>
+        </div>
+        <div id="tasksList" class="task-list">
+          <div class="empty-state">Chưa có task nào</div>
+        </div>
+      </div>
+      <!-- Task Detail Modal -->
+      <div class="modal" id="taskModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Chi tiết Task</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+          </div>
+          <div class="modal-body" id="taskModalBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Affiliate Page -->
+    <div class="page" id="page-affiliate">
+      <div class="page-header">
+        <h1>Shopee Affiliate</h1>
+        <p>Tạo affiliate links và tìm sản phẩm có hoa hồng cao</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Cấu hình Credentials</h2>
+          <span class="badge" id="affiliateBadge">Chưa cấu hình</span>
+        </div>
+        <form id="affiliateConfigForm" onsubmit="configAffiliate(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>App ID</label>
+              <input type="text" id="affAppId" placeholder="Từ Shopee Affiliate Portal" required>
+            </div>
+            <div class="form-group">
+              <label>Secret Key</label>
+              <input type="password" id="affSecret" placeholder="Secret key" required>
+            </div>
+            <div class="form-group">
+              <label>Region</label>
+              <select id="affRegion">
+                <option value="vn">Việt Nam</option>
+                <option value="sg">Singapore</option>
+                <option value="my">Malaysia</option>
+                <option value="th">Thailand</option>
+                <option value="id">Indonesia</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu cấu hình</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Tạo Affiliate Links</h2></div>
+        <form id="affiliateLinkForm" onsubmit="generateLinks(event)">
+          <div class="form-group">
+            <label>URLs (mỗi dòng 1 URL)</label>
+            <textarea id="affUrls" rows="4" placeholder="https://shopee.vn/product/123/456&#10;https://shopee.vn/product/789/012"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Sub IDs (tùy chọn, phân cách bằng dấu phẩy)</label>
+            <input type="text" id="affSubIds" placeholder="campaign1, source1">
+          </div>
+          <button type="submit" class="btn btn-primary">Tạo Links</button>
+        </form>
+        <div id="affiliateLinksResult" style="display:none">
+          <h3>Kết quả</h3>
+          <table class="data-table" id="linksTable">
+            <thead><tr><th>URL gốc</th><th>Affiliate Link</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Tìm Product Offers</h2></div>
+        <form id="productOfferForm" onsubmit="searchProductOffers(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Keyword</label>
+              <input type="text" id="offerKeyword" placeholder="áo thun nam">
+            </div>
+            <div class="form-group">
+              <label>Sắp xếp</label>
+              <select id="offerSort">
+                <option value="5">Hoa hồng cao nhất</option>
+                <option value="2">Bán chạy nhất</option>
+                <option value="1">Liên quan</option>
+                <option value="3">Giá cao → thấp</option>
+                <option value="4">Giá thấp → cao</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số lượng</label>
+              <input type="number" id="offerLimit" value="20" min="1" max="100">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        </form>
+        <div id="productOffersResult"></div>
+      </div>
+    </div>
+
+    <!-- Detect Page -->
+    <div class="page" id="page-detect">
+      <div class="page-header">
+        <h1>Nhận diện Link</h1>
+        <p>Phân tích URL Shopee để nhận diện loại trang</p>
+      </div>
+      <div class="card">
+        <form id="detectForm" onsubmit="detectLink(event)">
+          <div class="form-group">
+            <label>URL hoặc Keyword</label>
+            <input type="text" id="detectUrl" placeholder="Dán link Shopee vào đây..." required>
+          </div>
+          <button type="submit" class="btn btn-primary">Nhận diện</button>
+        </form>
+        <div id="detectResult" style="display:none">
+          <div class="detect-result-grid" id="detectResultGrid"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
