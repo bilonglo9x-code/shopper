@@ -198,12 +198,26 @@ async function scrapeCurrentPage(deep = false) {
       setProgress('Done!', 100);
 
     } else if (currentPageInfo.type === 'shop') {
+      let shopId = currentPageInfo.shopId;
+      if (!shopId && currentPageInfo.username) {
+        setProgress('Resolving shop username...', 5);
+        shopId = await runInPage(
+          async (username) => {
+            return await window.ShopeeAPI.resolveShopByUsername(username);
+          },
+          [currentPageInfo.username]
+        );
+      }
+      if (!shopId) {
+        showError('Could not determine shop ID');
+        return;
+      }
       setProgress('Scraping shop...', 10);
       result = await runInPage(
-        async (shopId, opts) => {
-          return await window.ShopeeAPI.scrapeShop(shopId, opts);
+        async (sid, opts) => {
+          return await window.ShopeeAPI.scrapeShop(sid, opts);
         },
-        [currentPageInfo.shopId, { maxItems, sortBy }]
+        [shopId, { maxItems, sortBy }]
       );
 
       if (deep && result?.items?.length > 0) {

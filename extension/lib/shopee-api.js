@@ -143,8 +143,6 @@ async function scrapeProduct(shopId, itemId, opts = {}) {
 
 function parseProduct(item, pdpDetail = null) {
   const domain = getDomain();
-  const priceDiv = item.price_before_discount ? 100000 : 100000;
-
   const product = {
     item_id: item.itemid,
     shop_id: item.shopid,
@@ -328,6 +326,15 @@ async function scrapeSearch(keyword, opts = {}) {
   };
 }
 
+// ── Shop utilities ──
+
+async function resolveShopByUsername(username) {
+  const data = await apiGet('/api/v4/shop/get_shop_detail', { username });
+  const shopId = data.data?.shopid || data.data?.account?.shopid;
+  if (!shopId) throw new Error(`Could not resolve shop: ${username}`);
+  return shopId;
+}
+
 // ── Shop scraping ──
 
 async function scrapeShop(shopId, opts = {}) {
@@ -461,6 +468,6 @@ if (typeof window !== 'undefined') {
   window.ShopeeAPI = {
     detectLink, scrapeProduct, scrapeSearch, scrapeShop,
     scrapeCategory, batchScrapeProducts, fetchAllReviews,
-    getDomain, SHOPEE_DOMAINS,
+    resolveShopByUsername, getDomain, SHOPEE_DOMAINS,
   };
 }
