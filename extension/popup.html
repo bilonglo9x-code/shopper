@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=480, initial-scale=1.0">
+  <title>Shopper</title>
+  <style>
+    :root {
+      --primary: #EE4D2D;
+      --primary-dark: #D73211;
+      --bg: #FFFFFF;
+      --bg-secondary: #F5F5F5;
+      --text: #222222;
+      --text-secondary: #666666;
+      --border: #E0E0E0;
+      --success: #26AA99;
+      --warning: #FFBF00;
+      --error: #EE4D2D;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 420px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header img { width: 28px; height: 28px; border-radius: 6px; }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .header small { opacity: 0.8; font-size: 11px; }
+
+    .page-info {
+      background: var(--bg-secondary);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-product { background: #E3F2FD; color: #1565C0; }
+    .badge-search { background: #FFF3E0; color: #E65100; }
+    .badge-shop { background: #E8F5E9; color: #2E7D32; }
+    .badge-category { background: #F3E5F5; color: #7B1FA2; }
+    .badge-unknown { background: #EEEEEE; color: #616161; }
+
+    .page-info-text {
+      flex: 1;
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .section {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .control-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    input, select {
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+      background: white;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(238, 77, 45, 0.1);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--primary);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--border);
+    }
+
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 11px;
+      flex: none;
+    }
+
+    .progress-section {
+      padding: 10px 16px;
+      display: none;
+    }
+
+    .progress-section.active { display: block; }
+
+    .progress-bar-wrapper {
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      overflow: hidden;
+      height: 6px;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 4px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .results-section {
+      padding: 12px 16px;
+      display: none;
+    }
+
+    .results-section.active { display: block; }
+
+    .result-summary {
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .result-summary .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      font-size: 12px;
+    }
+
+    .result-summary .stat-value {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .manual-input {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .manual-input input {
+      width: 100%;
+      padding: 8px 10px;
+    }
+
+    .error-message {
+      background: #FFF3F0;
+      color: var(--error);
+      padding: 8px 12px;
+      margin: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .error-message.active { display: block; }
+
+    .not-shopee {
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .not-shopee p { margin-bottom: 12px; }
+
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icons/icon48.png" alt="Shopper">
+    <div>
+      <h1>Shopper</h1>
+      <small>Thu thap du lieu Shopee</small>
+    </div>
+  </div>
+
+  <!-- Page detection info -->
+  <div class="page-info" id="pageInfo">
+    <span class="badge badge-unknown" id="pageBadge">...</span>
+    <span class="page-info-text" id="pageText">Detecting page...</span>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab active" data-tab="current">Current Page</div>
+    <div class="tab" data-tab="manual">Manual Input</div>
+  </div>
+
+  <!-- Current page tab -->
+  <div class="tab-content active" id="tab-current">
+    <div id="shopeeContent">
+      <!-- Options -->
+      <div class="section">
+        <div class="section-title">Options</div>
+        <div class="controls">
+          <div class="control-group">
+            <label>Max Items</label>
+            <input type="number" id="maxItems" value="60" min="0" placeholder="0 = all">
+          </div>
+          <div class="control-group">
+            <label>Sort By</label>
+            <select id="sortBy">
+              <option value="relevancy">Relevance</option>
+              <option value="ctime">Latest</option>
+              <option value="sales">Top Sales</option>
+              <option value="price">Price</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <div class="checkbox-group">
+              <input type="checkbox" id="includeReviews" checked>
+              <label for="includeReviews">Include Reviews</label>
+            </div>
+          </div>
+          <div class="control-group">
+            <label>Max Reviews</label>
+            <input type="number" id="maxReviews" value="50" min="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrape button -->
+      <div class="actions">
+        <button class="btn btn-primary" id="btnScrape">
+          <span>Scrape Data</span>
+        </button>
+        <button class="btn btn-secondary" id="btnScrapeAll" title="Scrape all products with full details">
+          <span>Deep Scrape</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="notShopee" class="not-shopee" style="display: none;">
+      <p>Navigate to a Shopee page to start scraping, or use the Manual Input tab.</p>
+    </div>
+  </div>
+
+  <!-- Manual input tab -->
+  <div class="tab-content" id="tab-manual">
+    <div class="manual-input">
+      <div class="control-group">
+        <label>Shopee URL or keyword</label>
+        <input type="text" id="manualInput" placeholder="https://shopee.vn/... or keyword">
+      </div>
+    </div>
+    <div class="section">
+      <div class="controls">
+        <div class="control-group">
+          <label>Domain</label>
+          <select id="manualDomain">
+            <option value="shopee.vn">shopee.vn</option>
+            <option value="shopee.sg">shopee.sg</option>
+            <option value="shopee.com.my">shopee.com.my</option>
+            <option value="shopee.co.th">shopee.co.th</option>
+            <option value="shopee.tw">shopee.tw</option>
+            <option value="shopee.co.id">shopee.co.id</option>
+            <option value="shopee.ph">shopee.ph</option>
+            <option value="shopee.com.br">shopee.com.br</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Max Items</label>
+          <input type="number" id="manualMaxItems" value="60" min="0">
+        </div>
+        <div class="control-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="manualReviews" checked>
+            <label for="manualReviews">Include Reviews</label>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Max Reviews</label>
+          <input type="number" id="manualMaxReviews" value="50" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnManualScrape">
+        <span>Scrape</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-bar-wrapper">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-text" id="progressText">Starting...</div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-message" id="errorMessage"></div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="result-summary" id="resultSummary"></div>
+    <div class="export-buttons">
+      <button class="btn btn-primary btn-small" id="btnExportJSON">Export JSON</button>
+      <button class="btn btn-secondary btn-small" id="btnExportCSV">Export CSV</button>
+      <button class="btn btn-secondary btn-small" id="btnExportReviews" style="display: none;">Reviews CSV</button>
+    </div>
+  </div>
+
+  <script src="lib/shopee-api.js"></script>
+  <script src="lib/exporter.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

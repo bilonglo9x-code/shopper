@@ -98,6 +98,9 @@ class ShopeeClient:
                     response = await client.post(path, params=params, json=json_data)
 
                 if response.status_code == 429:
+                    last_error = ShopeeAPIError(
+                        f"Rate limited (429): {path}", status_code=429
+                    )
                     logger.warning("Rate limited, waiting before retry...")
                     await asyncio.sleep(RETRY_DELAY * (attempt + 2))
                     continue

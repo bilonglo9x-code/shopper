@@ -132,32 +132,78 @@ print(result.link_type)  # "search"
 print(result.keyword)    # "áo thun nam"
 ```
 
+## Chrome Extension
+
+Extension Chrome cho phép thu thập dữ liệu Shopee trực tiếp từ trình duyệt, sử dụng phiên đăng nhập sẵn có để vượt qua các hạn chế anti-bot.
+
+### Cài đặt Extension
+
+1. Mở `chrome://extensions` trong Chrome
+2. Bật **Developer mode** (góc trên bên phải)
+3. Nhấn **Load unpacked** → chọn thư mục `extension/`
+4. Extension "Shopper" sẽ xuất hiện trong thanh công cụ
+
+### Sử dụng Extension
+
+1. **Đăng nhập Shopee** trong trình duyệt (bắt buộc)
+2. Mở trang Shopee (sản phẩm, tìm kiếm, shop, hoặc danh mục)
+3. Nhấn vào icon Extension "Shopper" trên thanh công cụ
+4. Extension tự động nhận diện loại trang:
+   - **PRODUCT**: Trang chi tiết sản phẩm
+   - **SEARCH**: Trang kết quả tìm kiếm
+   - **SHOP**: Trang shop
+   - **CATEGORY**: Trang danh mục
+5. Cấu hình tùy chọn (max items, reviews, sort)
+6. Nhấn **Scrape Data** để thu thập cơ bản, hoặc **Deep Scrape** để thu thập chi tiết từng sản phẩm
+7. Xuất kết quả: **Export JSON**, **Export CSV**, hoặc **Reviews CSV**
+
+### Tab Manual Input
+
+Cho phép nhập URL hoặc keyword trực tiếp, chọn domain Shopee, và scrape mà không cần navigate thủ công.
+
+### Tính năng Extension
+
+| Tính năng | Mô tả |
+|-----------|--------|
+| Nhận diện trang | Tự động detect loại trang Shopee đang mở |
+| Scrape sản phẩm | Thu thập đầy đủ: tên, giá, biến thể, hình ảnh, reviews |
+| Scrape tìm kiếm | Thu thập danh sách sản phẩm theo keyword |
+| Scrape shop | Thu thập tất cả sản phẩm của shop |
+| Scrape danh mục | Thu thập sản phẩm theo category |
+| Deep Scrape | Thu thập chi tiết từng sản phẩm trong danh sách |
+| Export JSON | Xuất dữ liệu đầy đủ dạng JSON |
+| Export CSV | Xuất dữ liệu dạng bảng CSV |
+| Reviews CSV | Xuất riêng reviews ra file CSV |
+
 ## Cấu trúc dự án
 
 ```
 shopper/
-├── src/shopper/
+├── src/shopper/           # Python CLI app
 │   ├── __init__.py
 │   ├── cli.py              # CLI interface (Typer)
 │   ├── constants.py         # Constants, enums, config
 │   ├── models.py            # Pydantic data models
 │   ├── api/
-│   │   ├── __init__.py
 │   │   └── client.py        # Shopee API client (httpx async)
 │   ├── collectors/
-│   │   ├── __init__.py
 │   │   ├── product.py       # Product data parser
 │   │   └── scraper.py       # Main scraper orchestrator
 │   ├── exporters/
-│   │   ├── __init__.py
 │   │   └── exporter.py      # JSON/CSV exporters
 │   └── parsers/
-│       ├── __init__.py
 │       └── link_parser.py   # URL parser & auto-detection
+├── extension/             # Chrome Extension
+│   ├── manifest.json        # Manifest V3 config
+│   ├── popup.html           # Popup UI
+│   ├── popup.js             # Popup logic
+│   ├── content.js           # Content script
+│   ├── background.js        # Service worker
+│   ├── lib/
+│   │   ├── shopee-api.js    # Shopee API library
+│   │   └── exporter.js      # Export utilities
+│   └── icons/               # Extension icons
 ├── tests/
-│   ├── test_link_parser.py
-│   ├── test_product_parser.py
-│   └── test_exporter.py
 ├── pyproject.toml
 └── README.md
 ```

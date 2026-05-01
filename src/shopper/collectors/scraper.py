@@ -36,6 +36,9 @@ class ShopeeScraper:
         request_delay: float = 1.0,
     ):
         self.domain = domain
+        self._cookies = cookies
+        self._proxy = proxy
+        self._request_delay = request_delay
         self.client = ShopeeClient(
             domain=domain,
             cookies=cookies,
@@ -69,7 +72,12 @@ class ShopeeScraper:
         domain = parsed.domain or self.domain
         if domain != self.domain:
             await self.client.close()
-            self.client = ShopeeClient(domain=domain)
+            self.client = ShopeeClient(
+                domain=domain,
+                cookies=self._cookies,
+                proxy=self._proxy,
+                request_delay=self._request_delay,
+            )
             self.domain = domain
 
         if parsed.link_type == LinkType.PRODUCT:

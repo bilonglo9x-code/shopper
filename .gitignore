@@ -16,5 +16,6 @@ env/
 output/
 *.json
 !pyproject.toml
+!extension/manifest.json
 *.csv
 .DS_Store
