@@ -60,6 +60,12 @@ function updatePageInfo(info) {
   }
 }
 
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
 function showResults(data) {
   scrapedData = data;
   const section = $('#resultsSection');
@@ -69,13 +75,13 @@ function showResults(data) {
   let html = '';
   if (data.type === 'search') {
     html = `
-      <div class="stat"><span>Keyword</span><span class="stat-value">${data.keyword}</span></div>
+      <div class="stat"><span>Keyword</span><span class="stat-value">${esc(data.keyword)}</span></div>
       <div class="stat"><span>Total Results</span><span class="stat-value">${(data.total_count || 0).toLocaleString()}</span></div>
       <div class="stat"><span>Items Scraped</span><span class="stat-value">${data.items.length}</span></div>
     `;
   } else if (data.type === 'shop') {
     html = `
-      <div class="stat"><span>Shop</span><span class="stat-value">${data.shop?.name || 'N/A'}</span></div>
+      <div class="stat"><span>Shop</span><span class="stat-value">${esc(data.shop?.name || 'N/A')}</span></div>
       <div class="stat"><span>Followers</span><span class="stat-value">${(data.shop?.follower_count || 0).toLocaleString()}</span></div>
       <div class="stat"><span>Items Scraped</span><span class="stat-value">${data.items.length}</span></div>
     `;
@@ -87,7 +93,7 @@ function showResults(data) {
   } else {
     // Single product
     html = `
-      <div class="stat"><span>Product</span><span class="stat-value">${(data.name || '').substring(0, 30)}...</span></div>
+      <div class="stat"><span>Product</span><span class="stat-value">${esc((data.name || '').substring(0, 30))}...</span></div>
       <div class="stat"><span>Price</span><span class="stat-value">${data.price?.price_min?.toLocaleString() || data.price?.price?.toLocaleString() || 'N/A'}</span></div>
       <div class="stat"><span>Sold</span><span class="stat-value">${(data.sold || 0).toLocaleString()}</span></div>
       <div class="stat"><span>Rating</span><span class="stat-value">${data.rating?.rating_star?.toFixed(1) || 'N/A'}/5</span></div>
@@ -269,6 +275,11 @@ function detectLinkLocal(url) {
   for (const p of patterns.shop) {
     const m = url.match(p);
     if (m) return { type: 'shop', shopId: parseInt(m[1]) };
+  }
+  // Check for shop username URL (e.g. shopee.vn/username)
+  const pathMatch = url.match(/shopee\.[^/]+\/([a-zA-Z0-9_.]+)(?:\?|$)/);
+  if (pathMatch && !url.includes('/search') && !pathMatch[1].match(/^(seller|buyer|m|cart|checkout|coins)/)) {
+    return { type: 'shop', username: pathMatch[1] };
   }
   return { type: 'search', keyword: url };
 }

@@ -249,7 +249,7 @@ async def _scrape_async(
             export_csv(result, output_path)
             if isinstance(result, Product) and result.reviews:
                 reviews_path = output_path.with_name(
-                    output_path.stem + "_reviews" + ext
+                    output_path.stem + "_reviews.csv"
                 )
                 export_reviews_csv(result, reviews_path)
                 console.print(f"[green]Reviews exported to:[/green] {reviews_path}")
