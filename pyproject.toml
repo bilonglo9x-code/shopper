@@ -1,7 +1,7 @@
 [project]
 name = "shopper"
 version = "0.1.0"
-description = "Shopee data scraping tool - Collect product info, reviews, search results from Shopee"
+description = "Shopee data scraping tool with API server and affiliate link generation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -11,6 +11,14 @@ dependencies = [
     "pydantic>=2.0",
     "typer>=0.12",
     "rich>=13.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
 ]
 
 [project.scripts]

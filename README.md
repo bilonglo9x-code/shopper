@@ -175,11 +175,106 @@ Cho phép nhập URL hoặc keyword trực tiếp, chọn domain Shopee, và scr
 | Export CSV | Xuất dữ liệu dạng bảng CSV |
 | Reviews CSV | Xuất riêng reviews ra file CSV |
 
+## API Server
+
+Server REST API để quản lý scraping tasks và tạo affiliate links.
+
+### Khởi động Server
+
+```bash
+# Khởi động server (mặc định port 8000)
+shopper server
+
+# Tùy chỉnh port
+shopper server --port 3000
+
+# Chế độ development (auto-reload)
+shopper server --reload
+```
+
+API docs tự động tại: `http://localhost:8000/docs`
+
+### Scraping API
+
+```bash
+# Tạo task scraping (chạy background)
+curl -X POST http://localhost:8000/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"url": "áo thun nam", "max_items": 50}'
+
+# Xem trạng thái task
+curl http://localhost:8000/api/tasks/{task_id}
+
+# Lấy kết quả khi hoàn thành
+curl http://localhost:8000/api/tasks/{task_id}/result
+
+# Scrape trực tiếp (đồng bộ, chờ kết quả)
+curl -X POST http://localhost:8000/api/scrape \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://shopee.vn/Product-i.123.456", "include_reviews": true}'
+
+# Nhận diện link
+curl "http://localhost:8000/api/detect?url=https://shopee.vn/Product-i.123.456"
+```
+
+### Shopee Affiliate API
+
+Tạo affiliate links từ chương trình Shopee Affiliate. Yêu cầu `app_id` và `secret` từ [Shopee Affiliate Portal](https://affiliate.shopee.vn/open_api/list).
+
+```bash
+# 1. Cấu hình credentials
+curl -X POST http://localhost:8000/api/affiliate/config \
+  -H "Content-Type: application/json" \
+  -d '{"app_id": "YOUR_APP_ID", "secret": "YOUR_SECRET", "region": "vn"}'
+
+# 2. Tạo affiliate link (1 hoặc nhiều URL)
+curl -X POST http://localhost:8000/api/affiliate/links \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": ["https://shopee.vn/product/123/456"],
+    "sub_ids": ["campaign1", "source1"]
+  }'
+
+# 3. Tìm sản phẩm có hoa hồng cao
+curl -X POST http://localhost:8000/api/affiliate/product-offers \
+  -H "Content-Type: application/json" \
+  -d '{"keyword": "áo thun nam", "sort_type": 5, "limit": 20}'
+
+# 4. Tìm shop có commission cao
+curl -X POST http://localhost:8000/api/affiliate/shop-offers \
+  -H "Content-Type: application/json" \
+  -d '{"sort_type": 2, "limit": 20}'
+
+# 5. Xem báo cáo conversion
+curl -X POST http://localhost:8000/api/affiliate/conversion-report \
+  -H "Content-Type: application/json" \
+  -d '{"start_time": 1714521600, "end_time": 1714608000}'
+```
+
+### API Endpoints
+
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/health` | Kiểm tra trạng thái server |
+| POST | `/api/tasks` | Tạo scraping task (background) |
+| GET | `/api/tasks` | Danh sách tasks |
+| GET | `/api/tasks/{id}` | Trạng thái task |
+| GET | `/api/tasks/{id}/result` | Kết quả task |
+| DELETE | `/api/tasks/{id}` | Xóa task |
+| POST | `/api/scrape` | Scrape đồng bộ |
+| GET | `/api/detect` | Nhận diện link |
+| POST | `/api/affiliate/config` | Cấu hình affiliate |
+| GET | `/api/affiliate/status` | Trạng thái affiliate |
+| POST | `/api/affiliate/links` | Tạo affiliate links |
+| POST | `/api/affiliate/product-offers` | Tìm product offers |
+| POST | `/api/affiliate/shop-offers` | Tìm shop offers |
+| POST | `/api/affiliate/conversion-report` | Báo cáo conversion |
+
 ## Cấu trúc dự án
 
 ```
 shopper/
-├── src/shopper/           # Python CLI app
+├── src/shopper/           # Python app
 │   ├── __init__.py
 │   ├── cli.py              # CLI interface (Typer)
 │   ├── constants.py         # Constants, enums, config
@@ -191,8 +286,14 @@ shopper/
 │   │   └── scraper.py       # Main scraper orchestrator
 │   ├── exporters/
 │   │   └── exporter.py      # JSON/CSV exporters
-│   └── parsers/
-│       └── link_parser.py   # URL parser & auto-detection
+│   ├── parsers/
+│   │   └── link_parser.py   # URL parser & auto-detection
+│   ├── server/              # FastAPI server
+│   │   ├── app.py           # API endpoints
+│   │   ├── models.py        # Request/response models
+│   │   └── storage.py       # Task storage
+│   └── affiliate/           # Shopee Affiliate client
+│       └── client.py        # GraphQL API + SHA256 auth
 ├── extension/             # Chrome Extension
 │   ├── manifest.json        # Manifest V3 config
 │   ├── popup.html           # Popup UI

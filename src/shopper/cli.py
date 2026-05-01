@@ -337,5 +337,50 @@ def info() -> None:
     console.print("  Keyword: any text (auto-detected as search)")
 
 
+@app.command()
+def server(
+    host: Annotated[
+        str,
+        typer.Option("--host", "-h", help="Server host"),
+    ] = "0.0.0.0",
+    port: Annotated[
+        int,
+        typer.Option("--port", "-p", help="Server port"),
+    ] = 8000,
+    reload: Annotated[
+        bool,
+        typer.Option("--reload", help="Enable auto-reload for development"),
+    ] = False,
+) -> None:
+    """Start the Shopper API server.
+
+    Provides REST API endpoints for scraping tasks, affiliate link generation,
+    and offer discovery. API docs available at http://host:port/docs
+
+    Examples:
+        shopper server
+        shopper server --port 3000
+        shopper server --reload
+    """
+    import uvicorn
+
+    console.print(
+        Panel(
+            f"[bold]Starting Shopper API Server[/bold]\n"
+            f"Host: {host}\n"
+            f"Port: {port}\n"
+            f"Docs: http://{host}:{port}/docs\n"
+            f"Reload: {'Yes' if reload else 'No'}",
+            title="Server",
+        )
+    )
+    uvicorn.run(
+        "shopper.server.app:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
+
+
 if __name__ == "__main__":
     app()
