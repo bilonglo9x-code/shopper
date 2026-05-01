@@ -9,6 +9,8 @@ from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from shopper.affiliate.client import ShopeeAffiliateClient, ShopeeAffiliateError
 from shopper.collectors.scraper import ShopeeScraper
@@ -158,6 +160,22 @@ async def _enrich_with_affiliate_links(data: dict, result: Any) -> dict:
         logger.warning("Failed to generate affiliate links", exc_info=True)
 
     return data
+
+
+# ── Static files ──
+
+_static_dir = Path(__file__).parent / "static"
+if _static_dir.is_dir():
+    app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    """Serve the web UI."""
+    index = _static_dir / "index.html"
+    if index.exists():
+        return FileResponse(index)
+    return {"message": "Shopper API", "docs": "/docs"}
 
 
 # ── Health ──
