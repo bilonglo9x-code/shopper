@@ -23,9 +23,7 @@ logger = logging.getLogger(__name__)
 
 def _price_from_raw(raw: int | float) -> float:
     """Convert Shopee raw price (x100000) to actual price."""
-    if raw >= 100000:
-        return raw / 100000
-    return float(raw)
+    return raw / 100000 if raw else 0.0
 
 
 def _build_image_url(image_hash: str) -> str:

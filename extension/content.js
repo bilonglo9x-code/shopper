@@ -86,7 +86,11 @@ window.addEventListener('shopper-api-result', (event) => {
 
 // Inject the bridge script that listens in page context
 function injectBridge() {
+  if (document.getElementById('shopper-bridge-script')) {
+    return;
+  }
   const bridgeScript = document.createElement('script');
+  bridgeScript.id = 'shopper-bridge-script';
   bridgeScript.textContent = `
     window.addEventListener('shopper-api-call', async (event) => {
       const { id, funcName, args } = event.detail;
