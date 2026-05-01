@@ -14,7 +14,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from shopper.collectors.scraper import ShopeeScraper
-from shopper.constants import DEFAULT_DOMAIN
+from shopper.constants import DEFAULT_DOMAIN, SortBy
 from shopper.exporters.exporter import export_csv, export_json, export_reviews_csv
 from shopper.models import CategoryResult, Product, SearchResult, ShopDetail
 from shopper.parsers.link_parser import detect_input
@@ -211,64 +211,73 @@ async def _scrape_async(
     if parsed.domain:
         domain = parsed.domain
 
-    async with ShopeeScraper(domain=domain) as scraper:
-        result = await scraper.scrape(
-            input_url,
-            max_items=max_items,
-            include_reviews=reviews,
-            max_reviews=max_reviews,
+    try:
+        async with ShopeeScraper(domain=domain) as scraper:
+            result = await scraper.scrape(
+                input_url,
+                max_items=max_items,
+                include_reviews=reviews,
+                max_reviews=max_reviews,
+                sort_by=SortBy(sort_by),
+            )
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        console.print(
+            "[yellow]Tip:[/yellow] Shopee may block requests from servers. "
+            "Try using --domain or providing cookies via the Python API."
+        )
+        raise typer.Exit(code=1)
+
+    # Display summary
+    if isinstance(result, Product):
+        _print_product_summary(result)
+    elif isinstance(result, SearchResult):
+        _print_search_summary(result)
+    elif isinstance(result, ShopDetail):
+        _print_shop_summary(result)
+    elif isinstance(result, CategoryResult):
+        console.print(
+            f"[cyan]Category {result.category_id}:[/cyan] "
+            f"{result.total_count:,} total, fetched {len(result.items)}"
         )
 
-        # Display summary
-        if isinstance(result, Product):
-            _print_product_summary(result)
-        elif isinstance(result, SearchResult):
-            _print_search_summary(result)
-        elif isinstance(result, ShopDetail):
-            _print_shop_summary(result)
-        elif isinstance(result, CategoryResult):
-            console.print(
-                f"[cyan]Category {result.category_id}:[/cyan] "
-                f"{result.total_count:,} total, fetched {len(result.items)}"
-            )
-
-        # Export
-        if output:
-            output_path = Path(output)
-            ext = output_path.suffix.lower()
-            if ext == ".csv" or format == "csv":
-                export_csv(result, output_path)
-                if isinstance(result, Product) and result.reviews:
-                    reviews_path = output_path.with_name(
-                        output_path.stem + "_reviews" + ext
-                    )
-                    export_reviews_csv(result, reviews_path)
-                    console.print(f"[green]Reviews exported to:[/green] {reviews_path}")
-            else:
-                export_json(result, output_path)
-
-            console.print(f"[green]Data exported to:[/green] {output_path}")
+    # Export
+    if output:
+        output_path = Path(output)
+        ext = output_path.suffix.lower()
+        if ext == ".csv" or format == "csv":
+            export_csv(result, output_path)
+            if isinstance(result, Product) and result.reviews:
+                reviews_path = output_path.with_name(
+                    output_path.stem + "_reviews" + ext
+                )
+                export_reviews_csv(result, reviews_path)
+                console.print(f"[green]Reviews exported to:[/green] {reviews_path}")
         else:
-            # Default output path
-            if isinstance(result, Product):
-                default_name = f"product_{result.item_id}"
-            elif isinstance(result, SearchResult):
-                safe_kw = result.keyword.replace(" ", "_")[:30]
-                default_name = f"search_{safe_kw}"
-            elif isinstance(result, ShopDetail):
-                default_name = f"shop_{result.shop_info.shop_id}"
-            elif isinstance(result, CategoryResult):
-                default_name = f"category_{result.category_id}"
-            else:
-                default_name = "output"
+            export_json(result, output_path)
 
-            output_dir = Path("output")
-            if format == "csv":
-                path = export_csv(result, output_dir / f"{default_name}.csv")
-            else:
-                path = export_json(result, output_dir / f"{default_name}.json")
+        console.print(f"[green]Data exported to:[/green] {output_path}")
+    else:
+        # Default output path
+        if isinstance(result, Product):
+            default_name = f"product_{result.item_id}"
+        elif isinstance(result, SearchResult):
+            safe_kw = result.keyword.replace(" ", "_")[:30]
+            default_name = f"search_{safe_kw}"
+        elif isinstance(result, ShopDetail):
+            default_name = f"shop_{result.shop_info.shop_id}"
+        elif isinstance(result, CategoryResult):
+            default_name = f"category_{result.category_id}"
+        else:
+            default_name = "output"
 
-            console.print(f"[green]Data exported to:[/green] {path}")
+        output_dir = Path("output")
+        if format == "csv":
+            path = export_csv(result, output_dir / f"{default_name}.csv")
+        else:
+            path = export_json(result, output_dir / f"{default_name}.json")
+
+        console.print(f"[green]Data exported to:[/green] {path}")
 
 
 @app.command()

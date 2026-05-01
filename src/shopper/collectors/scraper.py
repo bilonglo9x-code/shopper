@@ -60,6 +60,7 @@ class ShopeeScraper:
         max_items: int = 0,
         include_reviews: bool = False,
         max_reviews: int = 50,
+        sort_by: SortBy = SortBy.RELEVANCY,
     ) -> Product | SearchResult | ShopDetail | CategoryResult:
         """Auto-detect input type and scrape accordingly."""
         parsed = detect_input(url_or_keyword)
@@ -67,6 +68,7 @@ class ShopeeScraper:
 
         domain = parsed.domain or self.domain
         if domain != self.domain:
+            await self.client.close()
             self.client = ShopeeClient(domain=domain)
             self.domain = domain
 
@@ -81,7 +83,11 @@ class ShopeeScraper:
         elif parsed.link_type == LinkType.SEARCH:
             keyword = parsed.keyword or ""
             return await self.scrape_search(
-                keyword, max_items=max_items, include_reviews=include_reviews
+                keyword,
+                max_items=max_items,
+                sort_by=sort_by,
+                include_reviews=include_reviews,
+                max_reviews=max_reviews,
             )
         elif parsed.link_type == LinkType.SHOP:
             if parsed.shop_id:
@@ -89,12 +95,14 @@ class ShopeeScraper:
                     parsed.shop_id,
                     max_items=max_items,
                     include_reviews=include_reviews,
+                    max_reviews=max_reviews,
                 )
             elif parsed.keyword:
                 return await self.scrape_shop_by_username(
                     parsed.keyword,
                     max_items=max_items,
                     include_reviews=include_reviews,
+                    max_reviews=max_reviews,
                 )
             else:
                 raise ValueError("Shop link without shop_id or username")
@@ -103,7 +111,9 @@ class ShopeeScraper:
             return await self.scrape_category(
                 parsed.category_id,
                 max_items=max_items,
+                sort_by=sort_by,
                 include_reviews=include_reviews,
+                max_reviews=max_reviews,
             )
         else:
             raise ValueError(f"Cannot scrape link type: {parsed.link_type}")
