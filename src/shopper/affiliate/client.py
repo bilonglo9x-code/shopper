@@ -109,19 +109,15 @@ class ShopeeAffiliateClient:
         Returns:
             Short affiliate link (e.g. https://shope.ee/abc123).
         """
-        sub_ids_part = ""
-        if sub_ids:
-            formatted = ", ".join(f'"{s}"' for s in sub_ids[:5])
-            sub_ids_part = f', subIds: [{formatted}]'
-
-        query = f"""mutation {{
-    generateShortLink(input: {{
-        originUrl: "{origin_url}"{sub_ids_part}
-    }}) {{
+        query = """mutation GenerateShortLink($input: GenerateShortLinkInput!) {
+    generateShortLink(input: $input) {
         shortLink
-    }}
-}}"""
-        data = await self._execute(query)
+    }
+}"""
+        variables: dict[str, Any] = {"input": {"originUrl": origin_url}}
+        if sub_ids:
+            variables["input"]["subIds"] = sub_ids[:5]
+        data = await self._execute(query, variables=variables)
         return data["generateShortLink"]["shortLink"]
 
     async def generate_batch_short_links(
@@ -138,23 +134,18 @@ class ShopeeAffiliateClient:
         Returns:
             List of dicts with 'originUrl' and 'shortLink'.
         """
-        sub_ids_part = ""
-        if sub_ids:
-            formatted = ", ".join(f'"{s}"' for s in sub_ids[:5])
-            sub_ids_part = f", subIds: [{formatted}]"
-
-        urls_formatted = ", ".join(f'"{u}"' for u in urls)
-        query = f"""mutation {{
-    generateBatchShortLink(input: {{
-        originUrls: [{urls_formatted}]{sub_ids_part}
-    }}) {{
-        shortLinks {{
+        query = """mutation GenerateBatchShortLink($input: GenerateBatchShortLinkInput!) {
+    generateBatchShortLink(input: $input) {
+        shortLinks {
             originUrl
             shortLink
-        }}
-    }}
-}}"""
-        data = await self._execute(query)
+        }
+    }
+}"""
+        variables: dict[str, Any] = {"input": {"originUrls": urls}}
+        if sub_ids:
+            variables["input"]["subIds"] = sub_ids[:5]
+        data = await self._execute(query, variables=variables)
         return data["generateBatchShortLink"]["shortLinks"]
 
     # ── Offer Lists ──
@@ -178,21 +169,15 @@ class ShopeeAffiliateClient:
             page: Page number.
             limit: Items per page.
         """
-        filters = []
-        if keyword:
-            filters.append(f'keyword: "{keyword}"')
-        if shop_id:
-            filters.append(f"shopId: {shop_id}")
-        if item_id:
-            filters.append(f"itemId: {item_id}")
-        filters.append(f"sortType: {sort_type}")
-        filters.append(f"page: {page}")
-        filters.append(f"limit: {limit}")
-
-        filter_str = ", ".join(filters)
-        query = f"""query {{
-    productOfferV2({filter_str}) {{
-        nodes {{
+        query = """query ProductOfferV2(
+    $keyword: String, $shopId: Int64, $itemId: Int64,
+    $sortType: Int, $page: Int, $limit: Int
+) {
+    productOfferV2(
+        keyword: $keyword, shopId: $shopId, itemId: $itemId,
+        sortType: $sortType, page: $page, limit: $limit
+    ) {
+        nodes {
             itemId
             commissionRate
             sellerCommissionRate
@@ -209,15 +194,26 @@ class ShopeeAffiliateClient:
             shopId
             shopName
             shopType
-        }}
-        pageInfo {{
+        }
+        pageInfo {
             page
             limit
             hasNextPage
-        }}
-    }}
-}}"""
-        return await self._execute(query)
+        }
+    }
+}"""
+        variables: dict[str, Any] = {
+            "sortType": sort_type,
+            "page": page,
+            "limit": limit,
+        }
+        if keyword:
+            variables["keyword"] = keyword
+        if shop_id:
+            variables["shopId"] = shop_id
+        if item_id:
+            variables["itemId"] = item_id
+        return await self._execute(query, variables=variables)
 
     async def get_shop_offers(
         self,
@@ -236,19 +232,15 @@ class ShopeeAffiliateClient:
             page: Page number.
             limit: Items per page.
         """
-        filters = []
-        if keyword:
-            filters.append(f'keyword: "{keyword}"')
-        if shop_id:
-            filters.append(f"shopId: {shop_id}")
-        filters.append(f"sortType: {sort_type}")
-        filters.append(f"page: {page}")
-        filters.append(f"limit: {limit}")
-
-        filter_str = ", ".join(filters)
-        query = f"""query {{
-    shopOfferV2({filter_str}) {{
-        nodes {{
+        query = """query ShopOfferV2(
+    $keyword: String, $shopId: Int64,
+    $sortType: Int, $page: Int, $limit: Int
+) {
+    shopOfferV2(
+        keyword: $keyword, shopId: $shopId,
+        sortType: $sortType, page: $page, limit: $limit
+    ) {
+        nodes {
             shopId
             shopName
             commissionRate
@@ -261,15 +253,24 @@ class ShopeeAffiliateClient:
             periodStartTime
             periodEndTime
             sellerCommCoveRatio
-        }}
-        pageInfo {{
+        }
+        pageInfo {
             page
             limit
             hasNextPage
-        }}
-    }}
-}}"""
-        return await self._execute(query)
+        }
+    }
+}"""
+        variables: dict[str, Any] = {
+            "sortType": sort_type,
+            "page": page,
+            "limit": limit,
+        }
+        if keyword:
+            variables["keyword"] = keyword
+        if shop_id:
+            variables["shopId"] = shop_id
+        return await self._execute(query, variables=variables)
 
     # ── Reports ──
 
@@ -288,14 +289,14 @@ class ShopeeAffiliateClient:
             page: Page number.
             limit: Items per page.
         """
-        query = f"""query {{
+        query = """query ConversionReport(
+    $startTime: Int64!, $endTime: Int64!, $page: Int, $limit: Int
+) {
     conversionReport(
-        startTime: {start_time},
-        endTime: {end_time},
-        page: {page},
-        limit: {limit}
-    ) {{
-        nodes {{
+        startTime: $startTime, endTime: $endTime,
+        page: $page, limit: $limit
+    ) {
+        nodes {
             conversionId
             itemId
             shopId
@@ -307,15 +308,21 @@ class ShopeeAffiliateClient:
             clickTime
             status
             subIds
-        }}
-        pageInfo {{
+        }
+        pageInfo {
             page
             limit
             hasNextPage
-        }}
-    }}
-}}"""
-        return await self._execute(query)
+        }
+    }
+}"""
+        variables = {
+            "startTime": start_time,
+            "endTime": end_time,
+            "page": page,
+            "limit": limit,
+        }
+        return await self._execute(query, variables=variables)
 
 
 class ShopeeAffiliateError(Exception):
