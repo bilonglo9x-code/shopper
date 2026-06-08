@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32-S3 AI Assistant — Firmware Installer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --success: #22c55e;
+      --border: #334155;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      text-align: center;
+      padding: 3rem 1rem 1.5rem;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 480px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 540px;
+      width: 90%;
+      margin: 1rem 0;
+    }
+    .card h2 {
+      font-size: 1.15rem;
+      margin-bottom: 1rem;
+    }
+    .steps {
+      list-style: none;
+      counter-reset: step;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 0.6rem 0;
+      padding-left: 2.2rem;
+      position: relative;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flash-section {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+    esp-web-install-button {
+      display: inline-block;
+    }
+    esp-web-install-button button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.85rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    esp-web-install-button button:hover {
+      background: var(--accent-hover);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .info-item {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+    .info-item .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .info-item .value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-top: 0.2rem;
+    }
+    .not-supported {
+      display: none;
+      color: #ef4444;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+    footer {
+      margin-top: auto;
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    @media (max-width: 480px) {
+      .info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ESP32-S3 AI Assistant</h1>
+    <p>Flash firmware trực tiếp từ trình duyệt. Hỗ trợ board Pcbfun ESP32-S3 2.8" TFT Touch.</p>
+  </header>
+
+  <div class="card">
+    <h2>Board Information</h2>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="label">MCU</div>
+        <div class="value">ESP32-S3 N16R8</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Display</div>
+        <div class="value">2.8" ILI9341V</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Resolution</div>
+        <div class="value">240 × 320</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Audio</div>
+        <div class="value">ES8311 Codec</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Touch</div>
+        <div class="value">FT6336 Cap.</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Connectivity</div>
+        <div class="value">WiFi + BLE 5</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Hướng dẫn Flash</h2>
+    <ol class="steps">
+      <li>Kết nối board ESP32-S3 với máy tính qua cáp USB-C</li>
+      <li>Mở trang này bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong></li>
+      <li>Nhấn nút <strong>"Kết nối & Flash"</strong> bên dưới</li>
+      <li>Chọn cổng COM/serial của board trong popup</li>
+      <li>Đợi quá trình flash hoàn tất (khoảng 2-3 phút)</li>
+    </ol>
+
+    <div class="flash-section">
+      <esp-web-install-button manifest="./manifest.json">
+        <button slot="activate">Kết nối & Flash Firmware</button>
+        <span slot="unsupported" class="not-supported">
+          Trình duyệt không hỗ trợ Web Serial. Vui lòng dùng Chrome hoặc Edge trên desktop.
+        </span>
+        <span slot="not-allowed" class="not-supported">
+          Trang web cần chạy trên HTTPS để sử dụng Web Serial.
+        </span>
+      </esp-web-install-button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Sau khi Flash</h2>
+    <ol class="steps">
+      <li>Board sẽ tự khởi động và hiển thị giao diện setup WiFi</li>
+      <li>Kết nối WiFi cho board (nhấn giữ BOOT 3 giây để vào chế độ config)</li>
+      <li>Board sẽ tự kết nối tới server AI và sẵn sàng sử dụng</li>
+    </ol>
+  </div>
+
+  <footer>
+    <p>
+      Powered by <a href="https://github.com/esphome/esp-web-tools" target="_blank">ESP Web Tools</a>
+      · Firmware based on <a href="https://github.com/78/xiaozhi-esp32" target="_blank">Xiaozhi AI</a>
+      · AI Gateway: <a href="https://openclaw.ai" target="_blank">OpenClaw</a>
+    </p>
+  </footer>
+
+  <script
+    type="module"
+    src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"
+  ></script>
+</body>
+</html>

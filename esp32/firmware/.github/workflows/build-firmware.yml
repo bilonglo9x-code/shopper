@@ -1,0 +1,121 @@
+# ESP32-S3 AI Assistant — Firmware Build & Release
+#
+# This workflow builds firmware for the Pcbfun 2.8" TFT Touch board.
+# Copy this file to your xiaozhi-esp32 fork's .github/workflows/ directory.
+#
+# Triggers:
+#   - Push to main → build firmware
+#   - Push tag v* → build + create GitHub Release with .bin files
+#   - Pull request → build (no release)
+
+name: Build & Release Firmware
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write   # needed for creating releases
+
+env:
+  BOARD_NAME: pcbfun-tft280
+  IDF_VERSION: v5.5.2
+
+jobs:
+  build:
+    name: Build Pcbfun TFT280 Firmware
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:${{ env.IDF_VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build firmware
+        shell: bash
+        run: |
+          source $IDF_PATH/export.sh
+          python scripts/release.py $BOARD_NAME --name $BOARD_NAME
+
+      - name: List build artifacts
+        run: |
+          echo "=== Build output ==="
+          ls -lh build/merged-binary.bin
+          ls -lh build/bootloader/bootloader.bin
+          ls -lh build/partition_table/partition-table.bin
+          ls -lh build/ota_data_initial.bin
+          ls -lh build/xiaozhi.bin
+
+      - name: Upload merged binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ env.BOARD_NAME }}-${{ github.sha }}
+          path: build/merged-binary.bin
+          if-no-files-found: error
+
+      - name: Upload individual binaries (for web flash)
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-parts-${{ env.BOARD_NAME }}-${{ github.sha }}
+          path: |
+            build/bootloader/bootloader.bin
+            build/partition_table/partition-table.bin
+            build/ota_data_initial.bin
+            build/xiaozhi.bin
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-${{ env.BOARD_NAME }}-${{ github.sha }}
+          path: ./release/
+
+      - name: Download individual binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-parts-${{ env.BOARD_NAME }}-${{ github.sha }}
+          path: ./release/parts/
+
+      - name: Rename merged binary
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          cp release/merged-binary.bin "release/pcbfun-tft280-${TAG}.bin"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Firmware ${{ github.ref_name }} — Pcbfun 2.8\" TFT Touch"
+          body: |
+            ## Pcbfun ESP32-S3 2.8" TFT Touch Firmware
+
+            **Board**: Pcbfun TFT280 (ESP32-S3 N16R8)
+            **Version**: ${{ github.ref_name }}
+            **Based on**: Xiaozhi-ESP32 with OpenClaw integration
+
+            ### Flash Methods
+
+            **Web Flash (recommended)**:
+            Download individual .bin files below and place in `web-flash/firmware/`.
+
+            **USB (esptool)**:
+            ```bash
+            esptool.py --chip esp32s3 write_flash 0x0 pcbfun-tft280-${{ github.ref_name }}.bin
+            ```
+
+            **OTA**: Board auto-updates if connected to Xiaozhi server with OTA configured.
+          files: |
+            release/pcbfun-tft280-${{ github.ref_name }}.bin
+            release/parts/bootloader/bootloader.bin
+            release/parts/partition_table/partition-table.bin
+            release/parts/ota_data_initial.bin
+            release/parts/xiaozhi.bin
+          fail_on_unmatched_files: true
