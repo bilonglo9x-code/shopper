@@ -1,34 +1,38 @@
-# Xiaozhi ESP32 Server Configuration
-# Copy this file to xiaozhi-data/.config.yaml before starting the server.
+# Xiaozhi ESP32 Server — Minimal (Standalone) Configuration
+#
+# Use this ONLY for minimal (non-database) deployment.
+# For full deployment with 智控台, use setup.sh which generates data/.config.yaml
 #
 # This config routes LLM requests through OpenClaw gateway,
 # which provides multi-channel chat (WhatsApp, Telegram, Discord, etc.)
 # and supports multiple AI backends (Claude, GPT, local models).
 
 server:
-  # WebSocket endpoint for ESP32 devices
-  websocket: "ws://${SERVER_IP}:8000/xiaozhi/v1/"
-
-  # OTA firmware update endpoint
-  ota: "http://${SERVER_IP}:8003/xiaozhi/ota/"
+  ip: 0.0.0.0
+  port: 8000
+  http_port: 8003
 
 # Route LLM through OpenClaw gateway (OpenAI-compatible API)
-# This lets you use OpenClaw's AI agent, memory, and multi-channel features.
 llm:
   type: openai
   base_url: "http://openclaw:18789/v1"
   api_key: "${OPENCLAW_PASSWORD}"
   model: "openclaw"
 
-# ASR (Speech-to-Text) — use built-in or external service
+# ASR (Speech-to-Text)
+# Option 1: Free — use Sherpa ONNX (built-in, offline, no API key needed)
+# Option 2: FunASR (local model, requires ~2GB download)
+# Option 3: External API (Whisper, Baidu, Tencent, etc.)
 # asr:
-#   type: fun_asr    # Built-in FunASR (requires more resources)
+#   type: fun_asr
 #   # OR
 #   type: openai_whisper
 #   base_url: "https://api.openai.com/v1"
 #   api_key: "${OPENAI_API_KEY}"
 
-# TTS (Text-to-Speech) — configure your preferred provider
-# tts:
-#   type: edge_tts
-#   voice: "vi-VN-HoaiMyNeural"  # Vietnamese voice
+# TTS (Text-to-Speech)
+# EdgeTTS is free and supports Vietnamese
+tts:
+  type: edge_tts
+  voice: "vi-VN-HoaiMyNeural"   # Vietnamese female voice
+  # Other Vietnamese voices: vi-VN-NamMinhNeural (male)

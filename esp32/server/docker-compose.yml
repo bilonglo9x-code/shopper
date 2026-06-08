@@ -1,33 +1,116 @@
-# Xiaozhi ESP32 AI Server + OpenClaw Gateway
+# ESP32-S3 AI Assistant — Full Stack Server
+#
+# Includes: Xiaozhi Server + 智控台 Web Panel + MySQL + Redis + OpenClaw Gateway
 #
 # Usage:
+#   cd esp32/server
 #   cp .env.example .env   # edit your settings
+#   ./setup.sh             # creates directories, config files
 #   docker compose up -d
 #
+# First-time setup (after containers start):
+#   1. Open 智控台: http://localhost:8002
+#   2. Register admin account (first user = superadmin)
+#   3. In 参数管理, find server.secret → copy its value
+#   4. Paste into data/.config.yaml → manager-api.secret
+#   5. docker compose restart xiaozhi-esp32-server
+#
 # Ports:
-#   8000 — Xiaozhi WebSocket server (device connects here)
-#   8003 — Xiaozhi HTTP/OTA endpoint
+#   8000  — Xiaozhi WebSocket (ESP32 devices connect here)
+#   8002  — 智控台 Web Panel (management UI)
+#   8003  — Xiaozhi HTTP/OTA endpoint
 #   18789 — OpenClaw Gateway (AI backend + chat channels)
 
 services:
-  # ── Xiaozhi AI Server ─────────────────────────────────────────
-  xiaozhi-server:
+  # ── Xiaozhi AI Server (Core) ──────────────────────────────────
+  # Handles: WebSocket device connections, ASR, TTS, LLM routing, OTA
+  xiaozhi-esp32-server:
     image: ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:server_latest
-    container_name: xiaozhi-server
+    container_name: xiaozhi-esp32-server
+    depends_on:
+      - xiaozhi-esp32-server-db
+      - xiaozhi-esp32-server-redis
     restart: unless-stopped
     security_opt:
       - seccomp:unconfined
     environment:
-      - TZ=${TZ:-UTC}
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
     ports:
-      - "${XIAOZHI_WS_PORT:-8000}:8000"     # WebSocket for ESP32 devices
-      - "${XIAOZHI_HTTP_PORT:-8003}:8003"    # OTA + HTTP API
+      - "${XIAOZHI_WS_PORT:-8000}:8000"       # WebSocket for ESP32 devices
+      - "${XIAOZHI_HTTP_PORT:-8003}:8003"      # HTTP/OTA endpoint
     volumes:
-      - ./xiaozhi-data:/opt/xiaozhi-esp32-server/data
+      - ./data:/opt/xiaozhi-esp32-server/data
+      # Uncomment if using local FunASR model (requires download ~2GB)
+      # - ./models/SenseVoiceSmall/model.pt:/opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt
+    networks:
+      - ai-network
+
+  # ── 智控台 Web Panel (Manager API + Web UI) ───────────────────
+  # Provides: multi-user management, multi-agent, model config, device management
+  # Built with: Spring Boot (API) + Vue (frontend)
+  xiaozhi-esp32-server-web:
+    image: ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:web_latest
+    container_name: xiaozhi-esp32-server-web
+    restart: unless-stopped
+    depends_on:
+      xiaozhi-esp32-server-db:
+        condition: service_healthy
+      xiaozhi-esp32-server-redis:
+        condition: service_healthy
+    ports:
+      - "${XIAOZHI_WEB_PORT:-8002}:8002"       # 智控台 Web UI
+    environment:
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
+      - SPRING_DATASOURCE_DRUID_URL=jdbc:mysql://xiaozhi-esp32-server-db:3306/xiaozhi_esp32_server?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Ho_Chi_Minh&nullCatalogMeansCurrent=true&connectTimeout=30000&socketTimeout=30000&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
+      - SPRING_DATASOURCE_DRUID_USERNAME=root
+      - SPRING_DATASOURCE_DRUID_PASSWORD=${MYSQL_ROOT_PASSWORD:-xiaozhi2025}
+      - SPRING_DATA_REDIS_HOST=xiaozhi-esp32-server-redis
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_DATA_REDIS_PORT=6379
+    volumes:
+      - ./uploadfile:/uploadfile
+    networks:
+      - ai-network
+
+  # ── MySQL Database ────────────────────────────────────────────
+  xiaozhi-esp32-server-db:
+    image: mysql:8.0
+    container_name: xiaozhi-esp32-server-db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    expose:
+      - 3306
+    environment:
+      - TZ=${TZ:-Asia/Ho_Chi_Minh}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-xiaozhi2025}
+      - MYSQL_DATABASE=xiaozhi_esp32_server
+      - MYSQL_INITDB_ARGS=--character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - ai-network
+
+  # ── Redis Cache ───────────────────────────────────────────────
+  xiaozhi-esp32-server-redis:
+    image: redis:8.0
+    container_name: xiaozhi-esp32-server-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    expose:
+      - 6379
     networks:
       - ai-network
 
   # ── OpenClaw AI Gateway ───────────────────────────────────────
+  # Provides: OpenAI-compatible API, multi-channel chat, AI agent
   openclaw:
     image: node:22-slim
     container_name: openclaw-gateway

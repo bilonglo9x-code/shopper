@@ -6,29 +6,27 @@ Firmware, server, and web flash tools for the **Pcbfun ESP32-S3 2.8" TFT Touch**
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                     Server (Docker)                          │
-│                                                              │
-│  ┌─────────────────────┐   ┌──────────────────────────────┐  │
-│  │ Xiaozhi Server      │   │ OpenClaw Gateway             │  │
-│  │                     │   │                              │  │
-│  │ • WS :8000 (device) │──►│ • /v1/chat/completions      │  │
-│  │ • HTTP :8003 (OTA)  │   │ • WhatsApp/Telegram/Discord  │  │
-│  │ • ASR + TTS         │   │ • AI agent (Claude/GPT/...)  │  │
-│  └──────────┬──────────┘   └──────────────────────────────┘  │
-└─────────────┼────────────────────────────────────────────────┘
-              │ WebSocket (WiFi)
-              ▼
-┌──────────────────────────────────────────────────────────────┐
-│  ESP32-S3 Board — Pcbfun 2.8" TFT Touch                     │
-│  ILI9341 240×320 · ES8311 Audio · FT6336 Touch · WiFi+BLE   │
-└──────────────────────────────────────────────────────────────┘
-              ▲
-              │ USB (first flash)
-┌─────────────┴───────────────┐
-│  Web Flash Page             │
-│  (ESP Web Tools / Chrome)   │
-└─────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Docker Compose Stack                                                │
+│                                                                      │
+│  ┌──────────────────┐  ┌──────────────┐  ┌────────────────────────┐  │
+│  │ Xiaozhi Server   │  │ 智控台       │  │ OpenClaw Gateway       │  │
+│  │ WS  :8000        │  │ Web :8002    │  │ AI  :18789             │  │
+│  │ OTA :8003        │  │ (管理面板)   │  │ • OpenAI-compatible    │  │
+│  │ • ASR + TTS      │──│ • Users      │  │ • WhatsApp/Telegram    │  │
+│  │ • LLM routing    │  │ • Agents     │  │ • Claude/GPT/Qwen/... │  │
+│  │ • MCP tools      │  │ • Devices    │  │                        │  │
+│  └────────┬─────────┘  └──────┬───────┘  └────────────────────────┘  │
+│           │            ┌──────┴────────┐                             │
+│  ┌────────┴──────┐     │  MySQL + Redis│                             │
+│  │ ESP32 devices │     └───────────────┘                             │
+└──┼───────────────┼───────────────────────────────────────────────────┘
+   │ WebSocket     │ USB
+   ▼               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  ESP32-S3 Board — Pcbfun 2.8" TFT Touch                             │
+│  ILI9341 240×320 · ES8311 Audio · FT6336 Touch · WiFi+BLE           │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Board Specifications
@@ -70,126 +68,109 @@ esp32/
 │   ├── index.html                     # Flash page (ESP Web Tools)
 │   ├── manifest.json                  # Firmware manifest
 │   └── firmware/                      # Place compiled .bin files here
-├── server/                            # Server infrastructure
-│   ├── docker-compose.yml             # Xiaozhi + OpenClaw containers
+├── server/                            # Server infrastructure (Docker)
+│   ├── docker-compose.yml             # Full stack: Xiaozhi + 智控台 + MySQL + Redis + OpenClaw
 │   ├── .env.example                   # Environment variables template
+│   ├── setup.sh                       # First-time setup script
 │   ├── openclaw-setup.sh              # OpenClaw auto-setup script
-│   └── xiaozhi-config.yaml            # Xiaozhi server config template
+│   └── xiaozhi-config.yaml            # Minimal (standalone) config template
 ├── firmware/                          # Custom board definition
+│   ├── .github/workflows/             # CI/CD for firmware build
+│   │   └── build-firmware.yml         # GitHub Actions: build + release
 │   └── boards/pcbfun-tft280/          # Pcbfun 2.8" TFT board
 │       ├── config.h                   # Pin mapping & hardware config
 │       ├── config.json                # Build configuration
-│       └── pcbfun_tft280_board.cc     # Board initialization code
-└── docs/                              # Additional documentation
-    └── openclaw-integration.md        # OpenClaw integration guide
+│       ├── pcbfun_tft280_board.cc     # Board initialization code
+│       ├── ReadMe.md                  # Board-specific notes
+│       └── mcp_tools_example.cc       # MCP custom tools examples
+└── docs/                              # Documentation
+    ├── openclaw-integration.md        # OpenClaw integration guide
+    └── deployment-guide.md            # Full deployment guide (server + firmware + OTA)
 ```
 
 ## Quick Start
 
-### 1. Start the Server
+### 1. Deploy Server (Full Stack)
 
 ```bash
 cd esp32/server
 
-# Copy and edit configuration
+# Setup
 cp .env.example .env
-# Edit .env: set your API keys and server IP
+nano .env                  # set SERVER_IP, passwords
+chmod +x setup.sh && ./setup.sh
 
-# Create Xiaozhi data directory with config
-mkdir -p xiaozhi-data
-cp xiaozhi-config.yaml xiaozhi-data/.config.yaml
-# Edit .config.yaml: replace ${SERVER_IP} with your actual IP
-
-# Start services
+# Start all services
 docker compose up -d
 
-# Verify
-docker compose logs -f
+# Wait ~30s for MySQL, then open 智控台
+# http://<your-ip>:8002
 ```
 
+**First-time setup:**
+1. Register admin account at `http://<ip>:8002` (first user = superadmin)
+2. Go to **参数管理** → copy **server.secret** value
+3. Paste into `data/.config.yaml` → `manager-api.secret`
+4. `docker compose restart xiaozhi-esp32-server`
+5. Configure AI models in **模型配置** (add OpenClaw or other LLM)
+
+See [Deployment Guide](docs/deployment-guide.md) for detailed instructions.
+
 **Endpoints after startup:**
-- Xiaozhi WebSocket: `ws://<your-ip>:8000/xiaozhi/v1/`
-- Xiaozhi OTA: `http://<your-ip>:8003/xiaozhi/ota/`
-- OpenClaw API: `http://<your-ip>:18789/v1/chat/completions`
+| Service | URL | Description |
+|---|---|---|
+| 智控台 | `http://<ip>:8002` | Web management panel |
+| WebSocket | `ws://<ip>:8000/xiaozhi/v1/` | ESP32 device connections |
+| OTA | `http://<ip>:8003/xiaozhi/ota/` | Firmware updates |
+| OpenClaw | `http://<ip>:18789/v1/chat/completions` | AI gateway |
 
 ### 2. Build Firmware
 
+**Option A — Local build:**
 ```bash
-# Clone Xiaozhi firmware
+# Requires ESP-IDF v5.5 installed
 git clone https://github.com/78/xiaozhi-esp32.git
 cd xiaozhi-esp32
-
-# Copy custom board definition
 cp -r /path/to/esp32/firmware/boards/pcbfun-tft280 main/boards/
-
-# Setup ESP-IDF v5.5 (if not installed)
-# See: https://docs.espressif.com/projects/esp-idf/en/v5.5.2/esp32s3/get-started/
-
-# Build
 idf.py set-target esp32s3
 idf.py -D BOARD=pcbfun-tft280 build
 ```
 
-### 3. Flash via Web
-
-**Option A — Web Flash (recommended for first time):**
-
-1. Copy compiled `.bin` files to `esp32/web-flash/firmware/`:
-   - `bootloader.bin`
-   - `partition-table.bin`
-   - `ota_data_initial.bin`
-   - `firmware.bin`
-2. Serve the `web-flash/` directory over HTTPS (GitHub Pages, Vercel, etc.)
-3. Open in Chrome → click "Kết nối & Flash" → select USB port
-
-**Option B — Command line:**
+**Option B — Docker build (no ESP-IDF install needed):**
 ```bash
-idf.py -p /dev/ttyUSB0 flash monitor
+docker run --rm -v $(pwd):/project -w /project \
+  espressif/idf:v5.5.2 bash -c \
+  "source \$IDF_PATH/export.sh && \
+   python scripts/release.py pcbfun-tft280 --name pcbfun-tft280"
 ```
 
-**Option C — OTA update (after first flash):**
+**Option C — GitHub Actions CI/CD:**
+Fork xiaozhi-esp32, copy `firmware/.github/workflows/build-firmware.yml`, push tag `v*` → auto release.
 
-The firmware will automatically check for updates from the OTA endpoint configured in `.config.yaml`.
+### 3. Flash Firmware
 
-### 4. Configure WiFi on Board
+**Web Flash (recommended):** Copy .bin files to `web-flash/firmware/`, open page in Chrome, click flash.
 
-After flashing:
-1. The board boots and shows the setup UI on LCD
-2. **Press and hold BOOT button for 3 seconds** to enter WiFi config mode
-3. Connect to the board's WiFi AP and configure your home WiFi
-4. The board connects to your Xiaozhi server automatically
+**USB:** `esptool.py --chip esp32s3 write_flash 0x0 merged-binary.bin`
 
-### 5. Setup OpenClaw (Optional)
+**OTA:** Board auto-checks server for updates after first flash.
 
-OpenClaw provides multi-channel AI chat (WhatsApp, Telegram, Discord, etc.).
+### 4. Configure Board WiFi
 
-```bash
-# On the OpenClaw container (or your machine)
-docker exec -it openclaw-gateway sh
+1. Board boots → shows setup UI on LCD
+2. **Hold BOOT button 3 seconds** → WiFi config mode
+3. Connect to board's AP → configure your WiFi
+4. Board connects to Xiaozhi server automatically
 
-# Run interactive setup
-openclaw onboard
+### 5. Deploy Features (3 Methods)
 
-# Pair a chat channel (e.g., Telegram)
-openclaw channel add telegram
-# Follow the prompts to connect your Telegram bot
-```
+| Method | When to use | Reflash? |
+|---|---|---|
+| **OTA Update** | Major changes, new drivers, bug fixes | Yes (auto) |
+| **MCP Tools** | Add AI-callable actions (LED, display, sensors) | Build once |
+| **智控台** | Configure agents, models, manage devices | No |
 
-See [OpenClaw Integration Guide](docs/openclaw-integration.md) for detailed setup.
-
-## OpenClaw Integration
-
-OpenClaw serves as the AI backend for the Xiaozhi server. The integration works via
-OpenAI-compatible API:
-
-```
-ESP32 Board  ──WebSocket──►  Xiaozhi Server  ──HTTP/v1──►  OpenClaw Gateway
-  (voice/LCD)                  (ASR/TTS)                    (LLM/channels)
-```
-
-- **Voice input** on the board → Xiaozhi ASR → text → OpenClaw LLM → response text → Xiaozhi TTS → audio output
-- **Chat messages** from WhatsApp/Telegram → OpenClaw → shared conversation context
-- **Display commands** → OpenClaw can trigger display updates via MCP tools
+See [mcp_tools_example.cc](firmware/boards/pcbfun-tft280/mcp_tools_example.cc) for MCP tool examples.
 
 ## Touch Gestures
 
