@@ -1,0 +1,51 @@
+# Xiaozhi ESP32 AI Server + OpenClaw Gateway
+#
+# Usage:
+#   cp .env.example .env   # edit your settings
+#   docker compose up -d
+#
+# Ports:
+#   8000 — Xiaozhi WebSocket server (device connects here)
+#   8003 — Xiaozhi HTTP/OTA endpoint
+#   18789 — OpenClaw Gateway (AI backend + chat channels)
+
+services:
+  # ── Xiaozhi AI Server ─────────────────────────────────────────
+  xiaozhi-server:
+    image: ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:server_latest
+    container_name: xiaozhi-server
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - TZ=${TZ:-UTC}
+    ports:
+      - "${XIAOZHI_WS_PORT:-8000}:8000"     # WebSocket for ESP32 devices
+      - "${XIAOZHI_HTTP_PORT:-8003}:8003"    # OTA + HTTP API
+    volumes:
+      - ./xiaozhi-data:/opt/xiaozhi-esp32-server/data
+    networks:
+      - ai-network
+
+  # ── OpenClaw AI Gateway ───────────────────────────────────────
+  openclaw:
+    image: node:22-slim
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - OPENCLAW_GATEWAY_PORT=18789
+      - OPENCLAW_GATEWAY_BIND=0.0.0.0
+      - OPENCLAW_GATEWAY_PASSWORD=${OPENCLAW_PASSWORD:-changeme}
+    ports:
+      - "${OPENCLAW_PORT:-18789}:18789"
+    volumes:
+      - ./openclaw-data:/root/.openclaw
+      - ./openclaw-setup.sh:/app/setup.sh:ro
+    entrypoint: ["/bin/sh", "/app/setup.sh"]
+    networks:
+      - ai-network
+
+networks:
+  ai-network:
+    driver: bridge
